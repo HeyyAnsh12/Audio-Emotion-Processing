@@ -88,8 +88,4 @@ weighted avg     0.80      0.80      0.80       491
 
 ## 🌐 Web Application
 
-Try the live demo:
-**[Launch Streamlit App]()**
-
-- Upload your `.wav` files for immediate emotion analysis
-- Works with both speech and sung inputs
+-💻 How to Run bash Copy Edit cd emotion-detector-app ##*streamlit run app.py * Once launched, open the displayed URL (usually http://localhost:8501) in your browser.
