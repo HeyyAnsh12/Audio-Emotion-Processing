@@ -89,7 +89,7 @@ weighted avg     0.80      0.80      0.80       491
 ## 🌐 Web Application
 
 Try the live demo:
-**[Launch Streamlit App](https://emotionclassification-35uy4ytuemc3w3ovpoeiny.streamlit.app/)**
+**[Launch Streamlit App]()**
 
 - Upload your `.wav` files for immediate emotion analysis
 - Works with both speech and sung inputs
