@@ -2,50 +2,63 @@ import streamlit as st
 import numpy as np
 import librosa
 import tensorflow as tf
-import os
-from keras.models import load_model
+import pickle
+import wave
+from audio_recorder_streamlit import audio_recorder  # New audio recorder
 
-# Load pre-trained model from local directory
-emotion_model = load_model("emotion_model.h5") 
+# Load model and label encoder
+model = tf.keras.models.load_model("emotion_model.h5")
+with open("label_encoder.pkl", "rb") as f:
+    label_encoder = pickle.load(f)
 
-# Categories of emotions (edit to match model training)
-EMOTION_CLASSES = ['neutral', 'calm', 'happy', 'sad', 'angry', 'fearful', 'disgust', 'surprised']
+# Feature extraction
+def extract_features(file_path, sr=22050, n_mfcc=40):
+    y, _ = librosa.load(file_path, sr=sr)
+    mfcc = librosa.feature.mfcc(y=y, sr=sr, n_mfcc=n_mfcc)
+    return mfcc.T
 
-def compute_mfcc(audio_path):
-    """
-    Extracts MFCC features from an audio file.
-    Uses 40 coefficients averaged over time.
-    """
-    signal, rate = librosa.load(audio_path, duration=3, offset=0.5)
-    mfcc_data = librosa.feature.mfcc(y=signal, sr=rate, n_mfcc=40)
-    averaged_mfcc = np.mean(mfcc_data.T, axis=0)
-    return averaged_mfcc
+# Emotion prediction
+def predict_emotion(file_path):
+    features = extract_features(file_path)
+    padded = tf.keras.preprocessing.sequence.pad_sequences([features], padding='post', dtype='float32')
+    prediction = model.predict(padded)
+    predicted_index = np.argmax(prediction)
+    return label_encoder.inverse_transform([predicted_index])[0]
 
-def main():
-    st.header("Audio-Based Emotion Identifier")
-    st.write("Submit a `.wav` file and receive an emotion classification.")
+# UI
+st.title("🎙️ Emotion Detection from Voice")
+option = st.radio("Choose input:", ["Upload WAV file", "Record using Microphone"])
 
-    input_audio = st.file_uploader("Upload a WAV audio file", type=["wav"])
+# Upload method
+if option == "Upload WAV file":
+    uploaded_file = st.file_uploader("Upload a .wav file", type="wav")
+    if uploaded_file:
+        with open("temp.wav", "wb") as f:
+            f.write(uploaded_file.read())
+        st.audio("temp.wav")
+        emotion = predict_emotion("temp.wav")
+        st.success(f"Predicted Emotion: **{emotion}**")
 
-    if input_audio:
-        st.audio(input_audio, format="audio/wav")
-
-        # Temporary storage of uploaded audio
-        with open("buffered.wav", "wb") as temp_audio:
-            temp_audio.write(input_audio.read())
-
-        # Audio -> Features -> Prediction
-        extracted = compute_mfcc("buffered.wav")
-        input_features = np.expand_dims(extracted, axis=0)
-
-        probabilities = emotion_model.predict(input_features)
-        emotion = EMOTION_CLASSES[np.argmax(probabilities)]
-
-        st.subheader("Classification Output")
-        st.success(f"Detected Emotion: **{emotion.upper()}**")
-
-        # Cleanup temporary audio
-        os.remove("buffered.wav")
-
-if __name__ == "__main__":
-    main()
+# New microphone recording implementation
+elif option == "Record using Microphone":
+    st.info("🎤 Click the microphone to start recording. Stop automatically after 3 seconds of silence.")
+    
+    # Audio recorder with automatic silence detection
+    audio_bytes = audio_recorder(
+        energy_threshold=(-1.0, 1.0),  # Dual threshold for start/stop
+        pause_threshold=3.0,            # Stop after 3 seconds of silence
+        sample_rate=22050,               # Match librosa's expected sample rate
+        text="",
+        recording_color="#e8b62c",
+        neutral_color="#6aa36f"
+    )
+    
+    if audio_bytes:
+        # Save recording to WAV file
+        with open("recorded.wav", "wb") as f:
+            f.write(audio_bytes)
+        
+        # Playback and prediction
+        st.audio(audio_bytes, format="audio/wav")
+        emotion = predict_emotion("recorded.wav")
+        st.success(f"Predicted Emotion: **{emotion}**")
