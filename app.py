@@ -6,7 +6,7 @@ import os
 from keras.models import load_model
 
 # Load pre-trained model from local directory
-emotion_model = load_model("cnn+gru_model.h5")  # Rename if needed
+emotion_model = load_model("my_model.h5") 
 
 # Categories of emotions (edit to match model training)
 EMOTION_CLASSES = ['neutral', 'calm', 'happy', 'sad', 'angry', 'fearful', 'disgust', 'surprised']
