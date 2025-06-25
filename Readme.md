@@ -73,7 +73,7 @@ weighted avg     0.80      0.80      0.80       491
 
 ## 🔁 Confusion Matrix
 
-![Confusion Matrix](image-1.png)
+![Confusion Matrix](98da24eb-6a45-4ee2-ac02-4db120a2164b.png)
 
 ---
 
